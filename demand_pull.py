@@ -13,21 +13,24 @@ import pandas as pd
 #ASSUME OREO
 #network = "OREO"
 
+date_ranges = {
+					'JAN': '01/01/2016',
+					'FEB': '02/01/2016',
+					'MAR': '03/01/2016',
+					'APR': '04/01/2016',
+					'MAY': '05/01/2016',
+					'JUN': '06/01/2016',
+					'JUL': '07/01/2016',
+					'AUG': '08/01/2016',
+					'SEP': '09/01/2016',
+					'OCT': '10/01/2016',
+					'NOV': '11/01/2016',
+					'DEC': '12/01/2016',
+					'YE' : '01/01/2017',
+					}
 
-#GET SKUS FIRST
 #=-=-=-=-=-=-=-=-RAW SQL TO PULL SKU AND BY MONTH-=-=-=-=-=-=-=-=
-SQL=("""SELECT EXPORT_FCST_OPTIANT.DMDUNIT  
-FROM EXPORT_FCST_OPTIANT
-INNER JOIN IMPORT_ITEM
-ON IMPORT_ITEM.KGF_STD_ITEM_CDE=EXPORT_FCST_OPTIANT.DMDUNIT
-WHERE LOWER(IMPORT_ITEM.SHORT_DESCRIPTION) LIKE '%%oreo%%'
-GROUP BY EXPORT_FCST_OPTIANT.DMDUNIT
-ORDER BY EXPORT_FCST_OPTIANT.DMDUNIT""")
-#-=-=-==-=-=-=-END RAW SQL PULL BY MONTH=-=-=-=-=-=-=-=-=-=-=-=
-
-
-#=-=-=-=-=-=-=-=-RAW SQL TO PULL SKU AND BY MONTH-=-=-=-=-=-=-=-=
-SQL_Demand=("""SELECT 
+SQL=("""SELECT EXPORT_FCST_OPTIANT.DMDUNIT,
 SUM(EXPORT_FCST_OPTIANT.TOTALQTY*IMPORT_ITEM.NET_WT_CSE_QTY) 
 FROM EXPORT_FCST_OPTIANT
 INNER JOIN IMPORT_ITEM
@@ -35,10 +38,10 @@ ON IMPORT_ITEM.KGF_STD_ITEM_CDE=EXPORT_FCST_OPTIANT.DMDUNIT
 WHERE LOWER(IMPORT_ITEM.SHORT_DESCRIPTION) 
         LIKE '%%oreo%%'
 AND EXPORT_FCST_OPTIANT.STARTDATE 
-    between TO_DATE('02/29/2016','MM/DD/YYYY')
-    and     TO_DATE('03/28/2016','MM/DD/YYYY')
+    between TO_DATE('{}','MM/DD/YYYY')
+    and     TO_DATE('{}','MM/DD/YYYY')
 GROUP BY EXPORT_FCST_OPTIANT.DMDUNIT
-ORDER BY EXPORT_FCST_OPTIANT.DMDUNIT""")
+ORDER BY EXPORT_FCST_OPTIANT.DMDUNIT""").format(date_ranges["MAR"],date_ranges["APR"])
 #-=-=-==-=-=-=-END RAW SQL PULL BY MONTH=-=-=-=-=-=-=-=-=-=-=-=
 
 
@@ -48,19 +51,13 @@ connection = cx_Oracle.connect(o_kinect)
 #Perform Query To get SKUs
 cursor = connection.cursor()
 cursor.execute(SQL)
+x = cursor.fetchall()
 
 #Create Pandas   
-df = pd.DataFrame(cursor.fetchall(),header='SKUs')
-df.columns = ['SKU']
+df = pd.DataFrame(x)
+df.columns = ['SKU','April']
 
 print (df.head())
-
-#with open('oreo_demand.csv','wb') as dmd:
-#    cursor.execute(SQL)
-#    for row in cursor.fetchall():
-#        #dmd.write({"%s\n"} % str(row))
-#        x = (",".join(str(x) for x in row))
-#        dmd.write(x + '\n')
 
 cursor.close()
 connection.close()
