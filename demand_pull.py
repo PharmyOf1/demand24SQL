@@ -9,56 +9,79 @@ import csv
 from engine_info import o_kinect
 import pandas as pd
 
+class connect_db(object):
+	def __init__(self,connect_info):
+		self.connect_info = connect_info
+		self.connection = cx_Oracle.connect(self.connect_info)
+		self.cursor = self.connection.cursor()
 
-#ASSUME OREO
-#network = "OREO"
+	def exec_query(self,query):
+		self.query = query
+		self.cursor.execute(query)
+		return self.cursor.fetchall()
 
-date_ranges = {
-					'JAN': '01/01/2016',
-					'FEB': '02/01/2016',
-					'MAR': '03/01/2016',
-					'APR': '04/01/2016',
-					'MAY': '05/01/2016',
-					'JUN': '06/01/2016',
-					'JUL': '07/01/2016',
-					'AUG': '08/01/2016',
-					'SEP': '09/01/2016',
-					'OCT': '10/01/2016',
-					'NOV': '11/01/2016',
-					'DEC': '12/01/2016',
-					'YE' : '01/01/2017',
-					}
+	def close(self):
+		self.cursor.close()
+		self.connection.close()
 
+
+class get_SQL(object):
+	def __init__(self,network):
+		self.network = network
+
+	def get_dates(self):
+		date_ranges = [
+					'01/01/2016', #Jan
+					'02/01/2016', #Feb
+					'03/01/2016', #Mar
+					'04/01/2016', #Apr
+					'05/01/2016', #May
+					'06/01/2016', #Jun
+					'07/01/2016', #Jul
+					'08/01/2016', #Aug
+					'09/01/2016', #Sep
+					'10/01/2016', #Oct
+					'11/01/2016', #Nov
+					'12/01/2016', #Dec
+					'01/01/2017', #YE
+					]
+		return list(date for date in date_ranges)
+
+
+	def statements(self):
+		queries = []
+		dates = self.get_dates()
+		
+		for x in range(12):
+			a=dates[x]
+			b=dates[x+1]
 #=-=-=-=-=-=-=-=-RAW SQL TO PULL SKU AND BY MONTH-=-=-=-=-=-=-=-=
-SQL=("""SELECT EXPORT_FCST_OPTIANT.DMDUNIT,
-SUM(EXPORT_FCST_OPTIANT.TOTALQTY*IMPORT_ITEM.NET_WT_CSE_QTY) 
-FROM EXPORT_FCST_OPTIANT
-INNER JOIN IMPORT_ITEM
-ON IMPORT_ITEM.KGF_STD_ITEM_CDE=EXPORT_FCST_OPTIANT.DMDUNIT
-WHERE LOWER(IMPORT_ITEM.SHORT_DESCRIPTION) 
-        LIKE '%%oreo%%'
-AND EXPORT_FCST_OPTIANT.STARTDATE 
-    between TO_DATE('{}','MM/DD/YYYY')
-    and     TO_DATE('{}','MM/DD/YYYY')
-GROUP BY EXPORT_FCST_OPTIANT.DMDUNIT
-ORDER BY EXPORT_FCST_OPTIANT.DMDUNIT""").format(date_ranges["MAR"],date_ranges["APR"])
+			SQL=("""SELECT EXPORT_FCST_OPTIANT.DMDUNIT,
+				SUM(EXPORT_FCST_OPTIANT.TOTALQTY*IMPORT_ITEM.NET_WT_CSE_QTY) 
+				FROM EXPORT_FCST_OPTIANT
+				INNER JOIN IMPORT_ITEM
+				ON IMPORT_ITEM.KGF_STD_ITEM_CDE=EXPORT_FCST_OPTIANT.DMDUNIT
+				WHERE LOWER(IMPORT_ITEM.SHORT_DESCRIPTION) 
+        			LIKE '%%{}%%'
+				AND EXPORT_FCST_OPTIANT.STARTDATE 
+    				between TO_DATE('{}','MM/DD/YYYY')
+    				and     TO_DATE('{}','MM/DD/YYYY')
+				GROUP BY EXPORT_FCST_OPTIANT.DMDUNIT
+				ORDER BY EXPORT_FCST_OPTIANT.DMDUNIT""").format(self.network,a,b)
 #-=-=-==-=-=-=-END RAW SQL PULL BY MONTH=-=-=-=-=-=-=-=-=-=-=-=
+			queries.append(SQL)
+		
+		return queries
 
 
-#Connect to Database
-connection = cx_Oracle.connect(o_kinect)
+if __name__=='__main__':
+	db = connect_db(o_kinect)
+	oreo = get_SQL('oreo')
+	q = oreo.statements()
 
-#Perform Query To get SKUs
-cursor = connection.cursor()
-cursor.execute(SQL)
-x = cursor.fetchall()
+	print (q[11])
 
-#Create Pandas   
-df = pd.DataFrame(x)
-df.columns = ['SKU','April']
+	db.close()
 
-print (df.head())
 
-cursor.close()
-connection.close()
 
