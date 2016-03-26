@@ -6,12 +6,13 @@
 
 import cx_Oracle
 import csv
-from engine_info import o_kinect, email_login
+from engine_info import o_kinect, email_login, TwitterAPI
 import pandas as pd
 import smtplib
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 from email.mime.application import MIMEApplication
+import tweepy
 
 
 class connect_db(object):
@@ -113,14 +114,22 @@ class network_info(object):
 		self.frame = frame
 		self.name = name
 
+		if self.name=='':
+			self.name = 'Biscuit'
+
 		try:
 			self.frame.to_csv(self.name+'.csv')
 		except:
 			open(self.name+'.csv','a').close()
 			self.frame.to_csv(self.name+'.csv')
 
-	def twitter(self):
-		pass
+	def tweet(self):
+		message = ('{} email sent.').format(self.name)
+		try:
+			twitter.api.update_status(status=message)
+		except:
+			pass
+
 
 	def log(self):
 		print ('{} email sent.').format(self.name)
@@ -133,7 +142,7 @@ class network_info(object):
 		msg['From'] = gmailUser
 		msg['To'] = recipient
 		msg['Subject'] = ("{}: Monthly Demand").format(self.name)
-		part = MIMEText('Please see attached file.')
+		part = MIMEText('Please see attached file. \n - the PI')
 		msg.attach(part)
 		part = MIMEApplication(open(self.name+'.csv',"rb").read())
 		part.add_header('Content-Disposition', 'attachment', filename=self.name+'.csv')
@@ -147,15 +156,17 @@ class network_info(object):
 		mailServer.close()
 		self.log()
 
-
 if __name__=='__main__':
 	db = connect_db(o_kinect)
-	ntw = '_'
-	network_list = ['oreo','chips', 'belvita', 'ritz','triscuit']
+	twitter = TwitterAPI()
+
+	#Network list for specif SQL regex by description. Blank = all items
+	network_list = ['','oreo',]
 
 	for ntw in network_list:
 		BISC_NTW = network_info(db.create_df(get_SQL(ntw.lower()).statements()),ntw.upper())
 		BISC_NTW.email()
+		BISC_NTW.tweet()
 
 	db.close()
 
