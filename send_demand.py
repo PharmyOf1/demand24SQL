@@ -9,6 +9,9 @@ import csv
 from engine_info import o_kinect, email_login
 import pandas as pd
 import smtplib
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.mime.application import MIMEApplication
 
 
 class connect_db(object):
@@ -105,77 +108,57 @@ class get_SQL(object):
 		
 		return queries
 
-class alert_all(object):
-	def __init__(self):
+class network_info(object):
+	def __init__(self,frame,name='Bisc'):
+		self.frame = frame
+		self.name = name
+
+		try:
+			self.frame.to_csv(self.name+'.csv')
+		except:
+			open(self.name+'.csv','a').close()
+			self.frame.to_csv(self.name+'.csv')
+
+	def twitter(self):
 		pass
 
-	def csv_create(self,data_frame):
-		self.data_frame = data_frame
-		self.data_frame.to_csv('temp.csv')
-		return []
-
-	def email(self,data_frame,name_of_ntw):
-		self.data_frame = data_frame
-		self.name_of_ntw = name_of_ntw
-
-
-    	from email.MIMEMultipart import MIMEMultipart
-    	from email.MIMEText import MIMEText
-    	from email.mime.application import MIMEApplication
-
-    	gmailUser = email_login['user']
-    	gmailPassword = email_login['pw']
-    	recipient = email_login['receiver']
-
-    	msg = MIMEMultipart()
-    	msg['From'] = gmailUser
-    	msg['To'] = recipient
-    	msg['Subject'] = ("{}: Network Monthly Demand").format('hello')
-    	part = MIMEText('Please see attached file.')
-    	msg.attach(part)
-    	part = MIMEApplication(open('/home/pharmyof1/Desktop/Python Scripts/APSPulls/temp.csv',"rb").read())
-    	part.add_header('Content-Disposition', 'attachment', filename='network.csv')
-    	msg.attach(part)
-
-
-    	mailServer = smtplib.SMTP('smtp.gmail.com', 587)
-    	mailServer.ehlo()
-    	mailServer.starttls()
-    	mailServer.ehlo()
-    	mailServer.login(gmailUser, gmailPassword)
-    	mailServer.sendmail(gmailUser, recipient, msg.as_string())
-    	mailServer.close()
-		
-    	print ('Email sent succesful.')
-
-	def twitter(self,data_frame):
+	def log(self):
 		pass
 
-	def log(self,data_frame):
-		pass
-
-	def perform_all(self,data_frame):
-		self.data_frame = data_frame
-		self.csv_create(self.data_frame)
-		self.email(self.data_frame)
-		self.twitter(self.data_frame)
-		self.log(self.data_frame)
-		pass
+	def email(self):
+		gmailUser = email_login['user']
+		gmailPassword = email_login['pw']
+		recipient = email_login['receiver']
+		msg = MIMEMultipart()
+		msg['From'] = gmailUser
+		msg['To'] = recipient
+		msg['Subject'] = ("{}: Monthly Demand").format(self.name)
+		part = MIMEText('Please see attached file.')
+		msg.attach(part)
+		part = MIMEApplication(open(self.name+'.csv',"rb").read())
+		part.add_header('Content-Disposition', 'attachment', filename=self.name+'.csv')
+		msg.attach(part)
+		mailServer = smtplib.SMTP('smtp.gmail.com', 587)
+		mailServer.ehlo()
+		mailServer.starttls()
+		mailServer.ehlo()
+		mailServer.login(gmailUser, gmailPassword)
+		mailServer.sendmail(gmailUser, recipient, msg.as_string())
+		mailServer.close()
+		print ('Email sent.')
 
 
 if __name__=='__main__':
 	db = connect_db(o_kinect)
-	send_out = alert_all()
-	
-	oreo = db.create_df(get_SQL('oreo').statements())
-	#belvita = db.create_df(get_SQL('belvita').statements())
-	#chips = db.create_df(get_SQL('chips ahoy').statements())
-	#ritz = db.create_df(get_SQL('ritz').statements())
-	#triscuit = db.create_df(get_SQL('triscuit').statements())
-	
-	#send_out.csv_create(oreo)
-	#send_out.email(oreo,'Oreo')
+	ntw = '_'
+	network_list = ['oreo','chips ahoy', 'belvita', 'ritz', 'grahams', 'triscuit']
 
+	while ntw.lower() not in network_list:
+		ntw = str(raw_input('Enter network: '))
+
+	BISC_NTW = network_info(db.create_df(get_SQL(ntw.lower()).statements()),ntw.upper())
+	
+	BISC_NTW.email()
 
 	db.close()
 
