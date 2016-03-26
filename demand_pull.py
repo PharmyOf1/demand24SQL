@@ -24,6 +24,23 @@ class connect_db(object):
 		self.cursor.close()
 		self.connection.close()
 
+	def create_df(self,query_list):
+		frame_list = []
+		for num,q in enumerate(query_list):
+			h = pd.DataFrame(self.exec_query(q),columns=["SKU",'Month ' + str(num+1)])
+			frame_list.append(h)
+
+
+			current = frame_list[0]
+			for frame in (frame_list[1:]):
+				current = current.merge(frame,on='SKU',how='outer')
+
+		cols = list(current)
+		cols.insert(0, cols.pop(cols.index('SKU')))
+		current = current.ix[:, cols]
+
+		return current
+
 
 class get_SQL(object):
 	def __init__(self,network):
@@ -77,9 +94,16 @@ class get_SQL(object):
 if __name__=='__main__':
 	db = connect_db(o_kinect)
 	oreo = get_SQL('oreo')
-	q = oreo.statements()
+	oreo_queries = oreo.statements()
+	
+	oreo_dfs = db.create_df(oreo_queries)
 
-	print (q[11])
+	print (oreo_dfs.head())
+
+	
+	
+
+
 
 	db.close()
 
