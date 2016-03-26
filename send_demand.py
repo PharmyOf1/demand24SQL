@@ -123,7 +123,7 @@ class network_info(object):
 		pass
 
 	def log(self):
-		pass
+		print ('{} email sent.').format(self.name)
 
 	def email(self):
 		gmailUser = email_login['user']
@@ -145,20 +145,17 @@ class network_info(object):
 		mailServer.login(gmailUser, gmailPassword)
 		mailServer.sendmail(gmailUser, recipient, msg.as_string())
 		mailServer.close()
-		print ('Email sent.')
+		self.log()
 
 
 if __name__=='__main__':
 	db = connect_db(o_kinect)
 	ntw = '_'
-	network_list = ['oreo','chips ahoy', 'belvita', 'ritz', 'grahams', 'triscuit']
+	network_list = ['oreo','chips', 'belvita', 'ritz','triscuit']
 
-	while ntw.lower() not in network_list:
-		ntw = str(raw_input('Enter network: '))
-
-	BISC_NTW = network_info(db.create_df(get_SQL(ntw.lower()).statements()),ntw.upper())
-	
-	BISC_NTW.email()
+	for ntw in network_list:
+		BISC_NTW = network_info(db.create_df(get_SQL(ntw.lower()).statements()),ntw.upper())
+		BISC_NTW.email()
 
 	db.close()
 
