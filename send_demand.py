@@ -13,6 +13,8 @@ from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 from email.mime.application import MIMEApplication
 import tweepy
+import os
+import time
 
 
 class connect_db(object):
@@ -156,12 +158,22 @@ class network_info(object):
 		mailServer.close()
 		self.log()
 
+	def upload_stream(self):
+		pass
+
 if __name__=='__main__':
+	#Connect VPN
+	os.system("/opt/cisco/anyconnect/bin/vpn connect connect-americas.mdlz.com")
+	os.system("Echo ''")
+
+	time.sleep(15)
+
+
 	db = connect_db(o_kinect)
 	twitter = TwitterAPI()
 
 	#Network list for specif SQL regex by description. Blank = all items
-	network_list = ['','oreo',]
+	network_list = ['']
 
 	for ntw in network_list:
 		BISC_NTW = network_info(db.create_df(get_SQL(ntw.lower()).statements()),ntw.upper())
@@ -169,6 +181,8 @@ if __name__=='__main__':
 		BISC_NTW.tweet()
 
 	db.close()
+
+	os.system("/opt/cisco/anyconnect/bin/vpn disconnect")
 
 
 
